@@ -24,8 +24,8 @@ type Tarefa = {
   criadaEm: string;
   prioridade: Prioridade;
   listaId: string;
-  agendadaPara?: string;
-  smsSid?: string;
+  agendadaPara?: string | undefined;
+  smsSid?: string | undefined;
 };
 type Lista = { id: string; nome: string };
 

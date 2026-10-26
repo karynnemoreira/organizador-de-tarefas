@@ -148,3 +148,14 @@
   --shadow-card: var(--shadow-card);
   --font-sans: "Nunito", system-ui, sans-serif;
 }
+
+:root {
+  --prio-alta: oklch(0.62 0.21 25);
+  --prio-media: oklch(0.78 0.16 75);
+  --prio-baixa: oklch(0.68 0.15 150);
+}
+@theme inline {
+  --color-prio-alta: var(--prio-alta);
+  --color-prio-media: var(--prio-media);
+  --color-prio-baixa: var(--prio-baixa);
+}

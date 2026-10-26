@@ -3,8 +3,8 @@ import { createServerFn } from "@tanstack/react-start";
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 function headers() {
-  const lovable = process.env.LOVABLE_API_KEY;
-  const twilio = process.env.TWILIO_API_KEY;
+  const lovable = process.env["LOVABLE_API_KEY"];
+  const twilio = process.env["TWILIO_API_KEY"];
   if (!lovable || !twilio) throw new Error("Serviço de SMS não configurado.");
   return {
     Authorization: `Bearer ${lovable}`,
@@ -21,7 +21,7 @@ export const agendarSms = createServerFn({ method: "POST" })
     return d;
   })
   .handler(async ({ data }) => {
-    const service = process.env.TWILIO_MESSAGING_SERVICE_SID;
+    const service = process.env["TWILIO_MESSAGING_SERVICE_SID"];
     if (!service) throw new Error("Falta configurar o serviço de mensagens do Twilio.");
     const res = await fetch(`${GATEWAY_URL}/Messages.json`, {
       method: "POST",

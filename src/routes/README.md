@@ -1,7 +1,7 @@
 # Routes
 
 TanStack Start uses **file-based routing**. Every `.jsx` file in this directory
-defines a route. Do **not** create `src/pages/`, `src/routes/_app/index.tsx`, or
+defines a route. Do **not** create `src/pages/`, `src/routes/_app/index.jsx`, or
 `app/layout.jsx` — those are Next.js / Remix conventions. The only root layout
 is `src/routes/__root.jsx`.
 

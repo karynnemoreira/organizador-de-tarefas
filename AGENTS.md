@@ -9,5 +9,6 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Keep the study-organizer screen in JavaScript/JSX; retain the existing TanStack bootstrap and infrastructure to avoid unrelated conversion changes.
+- Use JavaScript for all editable source and configuration files, with JSX for React components; keep TanStack Start and configure its route generator for JavaScript output to preserve routing.
 - Task-title edits use a separate draft and update only the saved text after nonempty trimmed validation, so canceling preserves the task and its metadata.
+- Preserve the dependency patch honoring disableTypes in the Start route-tree footer until upstream supports JavaScript output; otherwise the generator inserts invalid type declarations into its JavaScript file.

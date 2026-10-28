@@ -24,6 +24,6 @@ npm run dev
 ## Built with
 
 - TanStack Start
-- TypeScript
+- JavaScript (JSX for React components)
 - React
 - Tailwind CSS

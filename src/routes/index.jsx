@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 import { agendarSms, cancelarSms } from "@/lib/sms.functions";
 
 export const Route = createFileRoute("/")({
@@ -16,55 +18,45 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Prioridade = "alta" | "media" | "baixa";
-type Tarefa = {
-  id: number;
-  texto: string;
-  concluida: boolean;
-  criadaEm: string;
-  prioridade: Prioridade;
-  listaId: string;
-  agendadaPara?: string | undefined;
-  smsSid?: string | undefined;
-};
-type Lista = { id: string; nome: string };
-
-const PRIORIDADES: Record<Prioridade, { rotulo: string; cor: string; borda: string }> = {
+const PRIORIDADES = {
   alta: { rotulo: "Alta", cor: "bg-prio-alta", borda: "border-l-prio-alta" },
   media: { rotulo: "Média", cor: "bg-prio-media", borda: "border-l-prio-media" },
   baixa: { rotulo: "Baixa", cor: "bg-prio-baixa", borda: "border-l-prio-baixa" },
 };
 const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-const LISTA_PADRAO: Lista = { id: "geral", nome: "Geral" };
+const LISTA_PADRAO = { id: "geral", nome: "Geral" };
 
-const fmt = (iso: string) =>
+const fmt = (iso) =>
   new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-const mesmoDia = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+const mesmoDia = (a, b) => a.toDateString() === b.toDateString();
 
-function Index() {
-  const [tarefas, setTarefas] = useState<Tarefa[]>([]);
-  const [listas, setListas] = useState<Lista[]>([LISTA_PADRAO]);
+export function Index() {
+  const [tarefas, setTarefas] = useState([]);
+  const [listas, setListas] = useState([LISTA_PADRAO]);
   const [listaAtiva, setListaAtiva] = useState("geral");
-  const [diaFiltro, setDiaFiltro] = useState<string | null>(null);
+  const [diaFiltro, setDiaFiltro] = useState(null);
   const [telefone, setTelefone] = useState("");
   const [texto, setTexto] = useState("");
-  const [prioridade, setPrioridade] = useState<Prioridade>("media");
+  const [prioridade, setPrioridade] = useState("media");
   const [agenda, setAgenda] = useState("");
   const [lembrete, setLembrete] = useState(false);
   const [novaLista, setNovaLista] = useState("");
   const [aviso, setAviso] = useState("");
   const [carregado, setCarregado] = useState(false);
+  const [tarefaEmEdicao, setTarefaEmEdicao] = useState(null);
+  const [tituloEditado, setTituloEditado] = useState("");
+  const [erroEdicao, setErroEdicao] = useState("");
 
   useEffect(() => {
     try {
-      const t = JSON.parse(localStorage.getItem("tarefas") || "[]") as Partial<Tarefa>[];
+      const t = JSON.parse(localStorage.getItem("tarefas") || "[]");
       setTarefas(
         t.map((x) => ({
           criadaEm: new Date(x.id ?? Date.now()).toISOString(),
           prioridade: "media",
           listaId: "geral",
           ...x,
-        })) as Tarefa[],
+        })),
       );
       const l = JSON.parse(localStorage.getItem("listas") || "null");
       if (l?.length) setListas(l);
@@ -91,12 +83,12 @@ function Index() {
     });
   }, []);
 
-  const adicionar = async (e: FormEvent) => {
+  const adicionar = async (e) => {
     e.preventDefault();
     const t = texto.trim();
     if (!t) return;
     setAviso("");
-    const nova: Tarefa = {
+    const nova = {
       id: Date.now(),
       texto: t,
       concluida: false,
@@ -117,7 +109,7 @@ function Index() {
         });
         nova.smsSid = r.sid;
       } catch (err) {
-        setAviso(`Tarefa salva, mas o SMS não foi agendado: ${(err as Error).message}`);
+        setAviso(`Tarefa salva, mas o SMS não foi agendado: ${err.message}`);
       }
     }
     setTarefas((p) => [...p, nova]);
@@ -126,12 +118,38 @@ function Index() {
     setLembrete(false);
   };
 
-  const excluir = (t: Tarefa) => {
+  const cancelarEdicao = () => {
+    setTarefaEmEdicao(null);
+    setTituloEditado("");
+    setErroEdicao("");
+  };
+
+  const iniciarEdicao = (tarefa) => {
+    setTarefaEmEdicao(tarefa.id);
+    setTituloEditado(tarefa.texto);
+    setErroEdicao("");
+  };
+
+  const salvarEdicao = (e) => {
+    e.preventDefault();
+    const titulo = tituloEditado.trim();
+    if (!titulo) {
+      setErroEdicao("Informe um título para a tarefa.");
+      return;
+    }
+    setTarefas((atuais) => atuais.map((tarefa) =>
+      tarefa.id === tarefaEmEdicao ? { ...tarefa, texto: titulo } : tarefa,
+    ));
+    cancelarEdicao();
+  };
+
+  const excluir = (t) => {
+    if (tarefaEmEdicao === t.id) cancelarEdicao();
     if (t.smsSid) cancelarSms({ data: { sid: t.smsSid } }).catch(() => {});
     setTarefas((p) => p.filter((x) => x.id !== t.id));
   };
 
-  const criarLista = (e: FormEvent) => {
+  const criarLista = (e) => {
     e.preventDefault();
     const n = novaLista.trim();
     if (!n) return;
@@ -141,13 +159,13 @@ function Index() {
     setNovaLista("");
   };
 
-  const excluirLista = (id: string) => {
+  const excluirLista = (id) => {
     tarefas.filter((t) => t.listaId === id).forEach(excluir);
     setListas(listas.filter((l) => l.id !== id));
     setListaAtiva("geral");
   };
 
-  const ordem: Record<Prioridade, number> = { alta: 0, media: 1, baixa: 2 };
+  const ordem = { alta: 0, media: 1, baixa: 2 };
   const visiveis = tarefas
     .filter((t) => t.listaId === listaAtiva)
     .filter((t) => !diaFiltro || (t.agendadaPara && mesmoDia(new Date(t.agendadaPara), new Date(diaFiltro))))
@@ -182,9 +200,9 @@ function Index() {
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold">Esta semana</h2>
             {diaFiltro && (
-              <button onClick={() => setDiaFiltro(null)} className="text-sm font-semibold text-primary">
+              <Button variant="ghost" onClick={() => setDiaFiltro(null)} className="text-sm font-semibold text-primary">
                 Ver todos os dias
-              </button>
+              </Button>
             )}
           </div>
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
@@ -193,7 +211,7 @@ function Index() {
               const ativo = diaFiltro && mesmoDia(d, new Date(diaFiltro));
               const qtd = tarefas.filter((t) => t.agendadaPara && mesmoDia(new Date(t.agendadaPara), d)).length;
               return (
-                <button
+                <Button variant="ghost"
                   key={d.toISOString()}
                   onClick={() => setDiaFiltro(ativo ? null : d.toISOString())}
                   className={`rounded-xl border p-2 text-center transition ${
@@ -203,7 +221,7 @@ function Index() {
                   <span className="block text-xs font-semibold">{DIAS[d.getDay()]}</span>
                   <span className="block text-lg font-extrabold">{d.getDate()}</span>
                   <span className="block text-[10px] opacity-80">{qtd ? `${qtd} tarefa${qtd > 1 ? "s" : ""}` : "—"}</span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -215,7 +233,7 @@ function Index() {
             <ul className="space-y-1">
               {listas.map((l) => (
                 <li key={l.id} className="flex items-center gap-1">
-                  <button
+                  <Button variant="ghost"
                     onClick={() => setListaAtiva(l.id)}
                     className={`flex flex-1 justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold ${
                       listaAtiva === l.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
@@ -223,18 +241,18 @@ function Index() {
                   >
                     <span className="truncate">{l.nome}</span>
                     <span>{tarefas.filter((t) => t.listaId === l.id).length}</span>
-                  </button>
+                  </Button>
                   {l.id !== "geral" && (
-                    <button onClick={() => excluirLista(l.id)} aria-label={`Excluir lista ${l.nome}`} className="px-2 text-destructive">
+                    <Button variant="ghost" onClick={() => excluirLista(l.id)} aria-label={`Excluir lista ${l.nome}`} className="px-2 text-destructive">
                       ×
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}
             </ul>
             <form onSubmit={criarLista} className="flex gap-2">
               <input value={novaLista} onChange={(e) => setNovaLista(e.target.value)} placeholder="Nova lista" className={`${campo} min-w-0 flex-1 py-2 text-sm`} />
-              <button className="rounded-xl bg-primary px-3 font-bold text-primary-foreground">+</button>
+              <Button variant="ghost" className="rounded-xl bg-primary px-3 font-bold text-primary-foreground">+</Button>
             </form>
             <div>
               <label htmlFor="tel" className="text-sm font-semibold">Celular para lembretes</label>
@@ -246,15 +264,15 @@ function Index() {
             <form onSubmit={adicionar} className={`${card} space-y-3`}>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <label htmlFor="nova" className="sr-only">Nova tarefa</label>
-                <input id="nova" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Digite uma nova tarefa..." className={`${campo} flex-1`} />
-                <button type="submit" className="rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground transition hover:opacity-90">
+                <input id="nova" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Digite uma nova tarefa..." className={`${campo} min-w-0 flex-1`} />
+                <Button variant="ghost" type="submit" className="rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground transition hover:opacity-90">
                   Adicionar
-                </button>
+                </Button>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-semibold">Prioridade:</span>
-                {(Object.keys(PRIORIDADES) as Prioridade[]).map((p) => (
-                  <button
+                {Object.keys(PRIORIDADES).map((p) => (
+                  <Button variant="ghost"
                     type="button"
                     key={p}
                     onClick={() => setPrioridade(p)}
@@ -262,12 +280,12 @@ function Index() {
                   >
                     <span className={`h-2.5 w-2.5 rounded-full ${PRIORIDADES[p].cor}`} />
                     {PRIORIDADES[p].rotulo}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <label htmlFor="agenda" className="font-semibold">Agendar para:</label>
-                <input id="agenda" type="datetime-local" value={agenda} onChange={(e) => setAgenda(e.target.value)} className={`${campo} py-2`} />
+                <input id="agenda" type="datetime-local" value={agenda} onChange={(e) => setAgenda(e.target.value)} className={`${campo} max-w-full min-w-0 py-2`} />
                 <label className={`flex items-center gap-2 ${!agenda || !telefone ? "opacity-50" : ""}`}>
                   <input type="checkbox" disabled={!agenda || !telefone} checked={lembrete} onChange={(e) => setLembrete(e.target.checked)} className="h-4 w-4 accent-primary" />
                   Lembrete por SMS 30 min antes
@@ -293,7 +311,33 @@ function Index() {
                         className="mt-1 h-5 w-5 accent-primary"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className={`break-words font-semibold ${t.concluida ? "text-muted-foreground line-through" : ""}`}>{t.texto}</p>
+                        {tarefaEmEdicao === t.id ? (
+                          <form onSubmit={salvarEdicao} className="space-y-2">
+                            <label htmlFor={`titulo-${t.id}`} className="sr-only">Título da tarefa</label>
+                            <input
+                              id={`titulo-${t.id}`}
+                              value={tituloEditado}
+                              onChange={(e) => {
+                                setTituloEditado(e.target.value);
+                                setErroEdicao("");
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Escape") cancelarEdicao();
+                              }}
+                              autoFocus
+                              aria-invalid={Boolean(erroEdicao)}
+                              aria-describedby={erroEdicao ? `erro-${t.id}` : undefined}
+                              className={`${campo} w-full min-w-0 py-2`}
+                            />
+                            {erroEdicao && <p id={`erro-${t.id}`} role="alert" className="text-sm text-destructive">{erroEdicao}</p>}
+                            <div className="flex flex-wrap gap-2">
+                              <Button type="submit" size="sm">Salvar</Button>
+                              <Button type="button" variant="outline" size="sm" onClick={cancelarEdicao}>Cancelar</Button>
+                            </div>
+                          </form>
+                        ) : (
+                          <p className={`break-words font-semibold ${t.concluida ? "text-muted-foreground line-through" : ""}`}>{t.texto}</p>
+                        )}
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <span className={`h-2 w-2 rounded-full ${PRIORIDADES[t.prioridade].cor}`} />
@@ -304,9 +348,16 @@ function Index() {
                           {t.smsSid && <span>🔔 SMS agendado</span>}
                         </div>
                       </div>
-                      <button onClick={() => excluir(t)} className="rounded-lg px-3 py-1 text-sm font-semibold text-destructive hover:bg-destructive/10">
+                      <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
+                        {tarefaEmEdicao !== t.id && (
+                          <Button type="button" variant="ghost" size="icon" onClick={() => iniciarEdicao(t)} aria-label={`Editar tarefa ${t.texto}`} title="Editar tarefa">
+                            <Pencil />
+                          </Button>
+                        )}
+                      <Button variant="ghost" onClick={() => excluir(t)} className="rounded-lg px-3 py-1 text-sm font-semibold text-destructive hover:bg-destructive/10">
                         Excluir
-                      </button>
+                      </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>

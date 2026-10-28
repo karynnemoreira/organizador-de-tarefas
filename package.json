@@ -2,6 +2,9 @@
   "name": "meu-organizador-de-estudos",
   "private": true,
   "sideEffects": false,
+  "patchedDependencies": {
+    "@tanstack/start-plugin-core@1.171.49": "patches/@tanstack%2Fstart-plugin-core@1.171.49.patch"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite dev",

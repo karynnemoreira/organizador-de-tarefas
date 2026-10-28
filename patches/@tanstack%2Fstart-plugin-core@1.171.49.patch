@@ -1,0 +1,14 @@
+diff --git a/dist/esm/start-router-plugin/route-tree-footer.js b/dist/esm/start-router-plugin/route-tree-footer.js
+--- a/dist/esm/start-router-plugin/route-tree-footer.js
++++ b/dist/esm/start-router-plugin/route-tree-footer.js
+@@ -30,6 +30,10 @@ function buildRouteTreeFileFooter(opts) {
+ }
+ function buildRouteTreeFileFooterFromConfig(opts) {
+ 	const { startConfig, resolvedStartConfig } = opts.getConfig();
++	if (startConfig.router.disableTypes) {
++		const footer = startConfig.router.routeTreeFileFooter;
++		return typeof footer === "function" ? footer() : footer ?? [];
++	}
+ 	return buildRouteTreeFileFooter({
+ 		generatedRouteTreePath: opts.generatedRouteTreePath,
+ 		startFilePath: resolvedStartConfig.startFilePath,

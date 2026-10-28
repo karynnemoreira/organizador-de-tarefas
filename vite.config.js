@@ -15,6 +15,7 @@ const configureProject = defineConfig({
       entry: "router.jsx",
       disableTypes: true,
       generatedRouteTree: "routeTree.gen.js",
+      routeTreeFileHeader: ["/* eslint-disable */"],
     },
   },
 });

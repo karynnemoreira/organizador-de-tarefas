@@ -40,6 +40,7 @@ describe("Edição de tarefas", () => {
     fireEvent.change(editar(), { target: { value: "  Revisar álgebra  " } });
     fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
     expect(tarefasSalvas()).toEqual([{ ...tarefa, texto: "Revisar álgebra" }]);
+    expect(screen.getByRole("button", { name: "Editar tarefa Revisar álgebra" })).toHaveFocus();
   });
 
   it.each(["", "   "])("não salva título vazio ou somente espaços: %j", (titulo) => {
@@ -67,5 +68,15 @@ describe("Edição de tarefas", () => {
     expect(tarefasSalvas().find((item) => item.texto === "Ler capítulo").concluida).toBe(true);
     fireEvent.click(within(linha).getByRole("button", { name: "Excluir" }));
     expect(tarefasSalvas()).toEqual([tarefa]);
+  });
+
+  it("expõe rótulos acessíveis e anuncia a conclusão da tarefa", () => {
+    expect(screen.getByRole("textbox", { name: "Nome da nova lista" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Média" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Concluir tarefa: Estudar matemática" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent('Tarefa "Estudar matemática" concluída.');
+    expect(screen.getByRole("checkbox", { name: "Reabrir tarefa: Estudar matemática" })).toBeChecked();
   });
 });

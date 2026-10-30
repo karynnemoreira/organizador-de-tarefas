@@ -118,7 +118,7 @@ export const Route = createRootRouteWithContext()({
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Creepster&display=swap",
       },
       {
         rel: "icon",
